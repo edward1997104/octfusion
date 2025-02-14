@@ -161,7 +161,7 @@ def run_mesh2sdf_mp():
     r''' Converts the meshes from ShapeNet to SDFs and manifold meshes.
         '''
 
-    num_processes = 1
+    num_processes = 80
     num_meshes = args.end
     mesh_per_process = num_meshes // num_processes + 1
 
