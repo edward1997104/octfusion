@@ -191,7 +191,7 @@ def run_mesh2sdf_mp():
                 sdf = sdf['sdf_arr']
 
                 # obtain meshes
-                vertices, faces = measure.marching_cubes(sdf, level=0)
+                vertices, faces, _, _ = measure.marching_cubes(sdf, level=0)
 
                 # to trimesh object
                 mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
