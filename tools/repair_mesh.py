@@ -256,7 +256,8 @@ def sample_pts_from_mesh():
     num_samples = 100000
     mesh_folder = os.path.join(root_folder, 'mesh')
     output_folder = os.path.join(root_folder, 'dataset')
-    filenames = get_filenames('all.txt')
+    # filenames = get_filenames('all.txt')
+    filenames = get_filenames(f'{args.dataset}.txt')
     for i in tqdm(range(args.start, args.end), ncols=80):
         filename = filenames[i]
         filename_obj = os.path.join(mesh_folder, filename + '.obj')
@@ -285,7 +286,8 @@ def sample_sdf():
                                     [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]])
 
     print('-> Sample SDFs from the ground truth.')
-    filenames = get_filenames('all.txt')
+    # filenames = get_filenames('all.txt')
+    filenames = get_filenames(f'{args.dataset}.txt')
     for i in tqdm(range(args.start, args.end), ncols=80):
         filename = filenames[i]
         dataset_folder = os.path.join(root_folder, 'dataset')
@@ -364,7 +366,8 @@ def sample_occu():
                                      [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]])
 
     # filenames = get_filenames('all.txt')
-    filenames = get_filenames('test.txt') + get_filenames('test_unseen5.txt')
+    # filenames = get_filenames('test.txt') + get_filenames('test_unseen5.txt')
+    filenames = get_filenames(f'{args.dataset}.txt')
     for filename in tqdm(filenames, ncols=80):
         filename_sdf = os.path.join(root_folder, 'sdf', filename + '.npy')
         filename_occu = os.path.join(root_folder, 'dataset', filename, 'points')
@@ -402,7 +405,8 @@ def generate_test_points():
     noise_std = 0.005
     point_sample_num = 3000
     # filenames = get_filenames('all.txt')
-    filenames = get_filenames('test.txt') + get_filenames('test_unseen5.txt')
+    # filenames = get_filenames('test.txt') + get_filenames('test_unseen5.txt')
+    filenames = get_filenames(f'{args.dataset}.txt')
     for filename in tqdm(filenames, ncols=80):
         filename_pts = os.path.join(
                 root_folder, 'dataset', filename, 'pointcloud.npz')
@@ -490,8 +494,8 @@ def generate_dataset():
     sample_sdf()
     sample_occu()
     generate_test_points()
-    generate_dataset_unseen5()
-    copy_convonet_filelists()
+    # generate_dataset_unseen5()
+    # copy_convonet_filelists()
 
 
 
