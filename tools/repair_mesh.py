@@ -195,7 +195,7 @@ def run_mesh2sdf_mp():
                 vertices, faces = mcubes.marching_cubes(sdf, 0)
 
                 # to trimesh object
-                mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+                mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
 
                 # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
                 vertices = mesh.vertices
@@ -205,7 +205,7 @@ def run_mesh2sdf_mp():
                 vertices = (vertices - center) * scale
 
                 # run mesh2sdf
-                mesh_new = trimesh.Trimesh(vertices=vertices, faces=faces)
+                mesh_new = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
                 mesh_new.vertices = mesh_new.vertices * shape_scale
 
                 # save
