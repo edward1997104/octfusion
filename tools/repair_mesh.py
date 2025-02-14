@@ -180,7 +180,7 @@ def run_mesh2sdf_mp():
                 check_folder([filename_obj, filename_box, filename_npy])
                 if os.path.exists(filename_obj): continue
 
-                filename_raw = os.path.join(tmpdirname, filename,  f'{args.sdf_size}.npz')
+                filename_raw = os.path.join(tmpdirname,  f'{args.sdf_size}.npz')
                 s3 = boto3.client('s3')
                 s3.download_file(args.s3_bucket, os.path.join(f'{args.dataset}_sdfs', filename, f'{args.sdf_size}.npz'), filename_raw)
 
