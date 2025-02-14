@@ -161,13 +161,13 @@ def run_mesh2sdf_mp():
     r''' Converts the meshes from ShapeNet to SDFs and manifold meshes.
         '''
 
+    filenames = get_filenames(f'{args.dataset}.txt')
     num_processes = 80
-    num_meshes = args.end
+    num_meshes = len(filenames)
     mesh_per_process = num_meshes // num_processes + 1
 
     print('-> Run mesh2sdf.')
     mesh_scale = 0.8
-    filenames = get_filenames(f'{args.dataset}.txt')
 
     def process(process_id):
         for i in tqdm(range(process_id * mesh_per_process, (process_id + 1)* mesh_per_process), ncols=80):
