@@ -22,6 +22,7 @@ import multiprocessing as mp
 from plyfile import PlyData, PlyElement
 import tempfile
 import boto3
+import mcubes
 from skimage import measure
 
 logger = logging.getLogger("trimesh")
@@ -191,7 +192,7 @@ def run_mesh2sdf_mp():
                 sdf = sdf['sdf_arr']
 
                 # obtain meshes
-                vertices, faces, _, _ = measure.marching_cubes(sdf, level=0)
+                vertices, faces = mcubes.marching_cubes(sdf, 0)
 
                 # to trimesh object
                 mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
