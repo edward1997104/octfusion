@@ -33,7 +33,7 @@ parser.add_argument('--start', type=int, default=0)
 parser.add_argument('--end', type=int, default=1000000)
 parser.add_argument('--sdf_size', type=int, default=256)
 parser.add_argument('--dataset', type=str, default='Thingi10K')
-parser.add_argument('--s3_bucket', type=str, default='s3://build3d-sdfs')
+parser.add_argument('--s3_bucket', type=str, default='build3d-sdfs')
 args = parser.parse_args()
 
 size = args.sdf_size        # resolution of SDF
