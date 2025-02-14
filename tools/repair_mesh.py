@@ -258,7 +258,8 @@ def sample_pts_from_mesh():
     output_folder = os.path.join(root_folder, 'dataset')
     # filenames = get_filenames('all.txt')
     filenames = get_filenames(f'{args.dataset}.txt')
-    for i in tqdm(range(args.start, args.end), ncols=80):
+    end = min(args.end, len(filenames))
+    for i in tqdm(range(args.start, end), ncols=80):
         filename = filenames[i]
         filename_obj = os.path.join(mesh_folder, filename + '.obj')
         filename_pts = os.path.join(output_folder, filename, 'pointcloud.npz')
@@ -288,7 +289,8 @@ def sample_sdf():
     print('-> Sample SDFs from the ground truth.')
     # filenames = get_filenames('all.txt')
     filenames = get_filenames(f'{args.dataset}.txt')
-    for i in tqdm(range(args.start, args.end), ncols=80):
+    end = min(args.end, len(filenames))
+    for i in tqdm(range(args.start, end), ncols=80):
         filename = filenames[i]
         dataset_folder = os.path.join(root_folder, 'dataset')
         filename_sdf = os.path.join(root_folder, 'sdf', filename + '.npy')
