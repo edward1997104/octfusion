@@ -20,6 +20,9 @@ import numpy as np
 from tqdm import tqdm
 import multiprocessing as mp
 from plyfile import PlyData, PlyElement
+import tempfile
+import boto3
+from skimage import measure
 
 logger = logging.getLogger("trimesh")
 logger.setLevel(logging.ERROR)
@@ -27,17 +30,19 @@ logger.setLevel(logging.ERROR)
 parser = argparse.ArgumentParser()
 parser.add_argument('--run', type=str, default="convert_mesh_to_sdf")
 parser.add_argument('--start', type=int, default=0)
-parser.add_argument('--end', type=int, default=45572)
+parser.add_argument('--end', type=int, default=1000000)
 parser.add_argument('--sdf_size', type=int, default=256)
+parser.add_argument('--dataset', type=str, default='Thingi10K')
+parser.add_argument('--s3_bucket', type=str, default='s3://build3d-sdfs')
 args = parser.parse_args()
 
 size = args.sdf_size        # resolution of SDF
-size = 128                 # resolution of SDF
-level = 0.015            # 2/128 = 0.015625
+# size = 128                 # resolution of SDF
+level = 0.015  / 2         # 2/128 = 0.015625
 shape_scale = 0.5    # rescale the shape into [-0.5, 0.5]
 project_folder = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-root_folder = os.path.join(project_folder, 'data/ShapeNet')
-file_folder = 'data/ShapeNet/'
+root_folder = os.path.join(project_folder, f'data/{args.dataset}')
+file_folder = f'data/{args.dataset}'
 
 
 def create_flag_file(filename):
@@ -65,8 +70,6 @@ def check_folder(filenames: list):
 def get_filenames(filelist):
     r''' Gets filenames from a filelist.
     '''
-
-    filelist = os.path.join(root_folder, 'filelist', filelist)
     with open(filelist, 'r') as fid:
         lines = fid.readlines()
     filenames = [line.split()[0] for line in lines]
@@ -128,8 +131,6 @@ def run_mesh2sdf():
     filenames = get_filenames('all.txt')
     for i in tqdm(range(args.start, args.end), ncols=80):
         filename = filenames[i]
-        filename_raw = os.path.join(
-                file_folder, 'ShapeNetCore.v1', filename, 'model.obj')
         filename_obj = os.path.join(root_folder, 'mesh', filename + '.obj')
         filename_box = os.path.join(root_folder, 'bbox', filename + '.npz')
         filename_npy = os.path.join(root_folder, 'sdf', filename + '.npy')
@@ -159,44 +160,56 @@ def run_mesh2sdf_mp():
     r''' Converts the meshes from ShapeNet to SDFs and manifold meshes.
         '''
 
-    num_processes = 100
+    num_processes = 1
     num_meshes = args.end
     mesh_per_process = num_meshes // num_processes + 1
 
     print('-> Run mesh2sdf.')
     mesh_scale = 0.8
-    filenames = get_filenames('all.txt')
+    filenames = get_filenames(f'{args.dataset}.txt')
 
     def process(process_id):
         for i in tqdm(range(process_id * mesh_per_process, (process_id + 1)* mesh_per_process), ncols=80):
             if i >= num_meshes: break
             filename = filenames[i]
-            filename_raw = os.path.join(
-                    file_folder, 'ShapeNetCore.v1', filename, 'model.obj')
-            filename_obj = os.path.join(root_folder, 'mesh', filename + '.obj')
-            filename_box = os.path.join(root_folder, 'bbox', filename + '.npz')
-            filename_npy = os.path.join(root_folder, 'sdf', filename + '.npy')
-            check_folder([filename_obj, filename_box, filename_npy])
-            if os.path.exists(filename_obj): continue
+            with tempfile.TemporaryDirectory() as tmpdirname:
 
-            # load the raw mesh
-            mesh = trimesh.load(filename_raw, force='mesh')
+                filename_obj = os.path.join(root_folder, 'mesh', filename + '.obj')
+                filename_box = os.path.join(root_folder, 'bbox', filename + '.npz')
+                filename_npy = os.path.join(root_folder, 'sdf', filename + '.npy')
+                check_folder([filename_obj, filename_box, filename_npy])
+                if os.path.exists(filename_obj): continue
 
-            # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
-            vertices = mesh.vertices
-            bbmin, bbmax = vertices.min(0), vertices.max(0)
-            center = (bbmin + bbmax) * 0.5
-            scale = 2.0 * mesh_scale / (bbmax - bbmin).max()
-            vertices = (vertices - center) * scale
+                filename_raw = os.path.join(tmpdirname, filename,  f'{args.sdf_size}.npz')
+                s3 = boto3.client('s3')
+                s3.download_file(args.s3_bucket,  f'{args.dataset}_sdfs', filename, f'{args.sdf_size}.npz', filename_raw)
 
-            # run mesh2sdf
-            sdf, mesh_new = mesh2sdf.compute(vertices, mesh.faces, size, fix=True,level=level, return_mesh=True)
-            mesh_new.vertices = mesh_new.vertices * shape_scale
+                ### sdf
+                sdf = np.load(filename_raw)
 
-            # save
-            np.savez(filename_box, bbmax=bbmax, bbmin=bbmin, mul=mesh_scale)
-            np.save(filename_npy, sdf)
-            mesh_new.export(filename_obj)
+                # obtain meshes
+                vertices, faces = measure.marching_cubes(sdf, level=0)
+
+                # to trimesh object
+                mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+
+                # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
+                vertices = mesh.vertices
+                bbmin, bbmax = vertices.min(0), vertices.max(0)
+                center = (bbmin + bbmax) * 0.5
+                scale = 2.0 * mesh_scale / (bbmax - bbmin).max()
+                vertices = (vertices - center) * scale
+
+                # run mesh2sdf
+                mesh_new = trimesh.Trimesh(vertices=vertices, faces=faces)
+                mesh_new.vertices = mesh_new.vertices * shape_scale
+
+                # save
+                np.savez(filename_box, bbmax=bbmax, bbmin=bbmin, mul=mesh_scale)
+                np.save(filename_npy, sdf)
+                mesh_new.export(filename_obj)
+
+                print(f'{filename} done.')
 
     processes = [mp.Process(target=process, args=[pid]) for pid in range(num_processes)]
     for p in processes:
@@ -464,7 +477,8 @@ def copy_convonet_filelists():
 def convert_mesh_to_sdf():
     # unzip_shapenet()
     # download_filelist()
-    run_mesh2sdf()
+    # run_mesh2sdf()
+    run_mesh2sdf_mp()
 
 
 def generate_dataset():
