@@ -186,6 +186,9 @@ def run_mesh2sdf_mp():
 
                 ### sdf
                 sdf = np.load(filename_raw)
+                print(f'{filename} loaded.')
+                print("Keys in the npz file: ", sdf.keys())
+                sdf = sdf['sdf_arr']
 
                 # obtain meshes
                 vertices, faces = measure.marching_cubes(sdf, level=0)
