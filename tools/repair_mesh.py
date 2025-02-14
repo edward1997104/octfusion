@@ -182,7 +182,7 @@ def run_mesh2sdf_mp():
 
                 filename_raw = os.path.join(tmpdirname, filename,  f'{args.sdf_size}.npz')
                 s3 = boto3.client('s3')
-                s3.download_file(args.s3_bucket,  f'{args.dataset}_sdfs', filename, f'{args.sdf_size}.npz', filename_raw)
+                s3.download_file(args.s3_bucket, os.path.join(f'{args.dataset}_sdfs', filename, f'{args.sdf_size}.npz'), filename_raw)
 
                 ### sdf
                 sdf = np.load(filename_raw)
