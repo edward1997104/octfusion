@@ -34,7 +34,7 @@ seed=42
 model='vae'
 mode="$1"
 stage_flag="$2"
-dataset_mode='snet'
+dataset_mode='thingi10k'
 note="test"
 category="$3"
 
@@ -43,7 +43,7 @@ df_cfg="configs/${df_yaml}"
 vq_model="GraphVAE"
 vq_yaml="vae_${dataset_mode}_train.yaml"
 vq_cfg="configs/${vq_yaml}"
-vq_ckpt="saved_ckpt/vae-ckpt/vae-shapenet-depth-8.pth"
+vq_ckpt="saved_ckpt/vae-ckpt/vae-${dataset_mode}-depth-8.pth"
 
 #####################
 
