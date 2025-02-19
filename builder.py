@@ -14,5 +14,7 @@ import models
 def get_dataset(flags):
   if flags.name.lower() == 'shapenet':
     return datasets.dualoctree_snet.get_shapenet_dataset(flags)
+  if flags.name.lower() == 'thingi10k':
+    return datasets.dualoctree_snet.get_shapenet_dataset(flags)
   else:
     raise ValueError
