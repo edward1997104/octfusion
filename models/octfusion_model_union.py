@@ -539,10 +539,11 @@ class OctFusionModel(BaseModel):
             print(colored('[*] weight successfully load unet_hr from: %s' % ckpt, 'blue'))
 
         if "opt" in load_options and "opt" in state_dict:
-            self.start_iter = state_dict['global_step']
             try:
                 print(colored('[*] training start from: %d' % self.start_iter, 'green'))
                 self.optimizer.load_state_dict(state_dict['opt'])
                 print(colored('[*] optimizer successfully restored from: %s' % ckpt, 'blue'))
+                self.start_iter = state_dict['global_step']
             except:
                 assert self.stage_flag == 'hr', 'optimizer not loaded but stage is not hr'
+                self.start_iter = 0 # restart
