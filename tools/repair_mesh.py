@@ -44,6 +44,7 @@ shape_scale = 0.5    # rescale the shape into [-0.5, 0.5]
 project_folder = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 root_folder = os.path.join(project_folder, f'data/{args.dataset}')
 file_folder = f'data/{args.dataset}'
+mesh_dir = f'/data_2/{args.dataset}_meshes'
 
 
 def create_flag_file(filename):
@@ -181,21 +182,10 @@ def run_mesh2sdf_mp():
                 check_folder([filename_obj, filename_box, filename_npy])
                 if os.path.exists(filename_obj): continue
 
-                filename_raw = os.path.join(tmpdirname,  f'{args.sdf_size}.npz')
-                s3 = boto3.client('s3')
-                s3.download_file(args.s3_bucket, os.path.join(f'{args.dataset}_sdfs', filename, f'{args.sdf_size}.npz'), filename_raw)
+                filename_raw = os.path.join(mesh_dir,  f'{filename}.stl')
 
-                ### sdf
-                sdf = np.load(filename_raw)
-                print(f'{filename} loaded.')
-                print("Keys in the npz file: ", sdf.keys())
-                sdf = sdf['sdf_arr']
-
-                # obtain meshes
-                vertices, faces = mcubes.marching_cubes(sdf, 0)
-
-                # to trimesh object
-                mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+                # load the raw mesh
+                mesh = trimesh.load(filename_raw, force='mesh')
 
                 # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
                 vertices = mesh.vertices
@@ -205,7 +195,7 @@ def run_mesh2sdf_mp():
                 vertices = (vertices - center) * scale
 
                 # run mesh2sdf
-                mesh_new = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+                sdf, mesh_new = mesh2sdf.compute(vertices, mesh.faces, size, fix=True, level=level, return_mesh=True)
                 mesh_new.vertices = mesh_new.vertices * shape_scale
 
                 # save
