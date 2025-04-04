@@ -7,6 +7,8 @@
 
 import os
 import time
+import traceback
+
 import wget
 import shutil
 import torch
@@ -175,35 +177,38 @@ def run_mesh2sdf_mp():
             if i >= num_meshes: break
             filename = filenames[i]
             with tempfile.TemporaryDirectory() as tmpdirname:
+                try:
+                    filename_obj = os.path.join(root_folder, 'mesh', filename + '.obj')
+                    filename_box = os.path.join(root_folder, 'bbox', filename + '.npz')
+                    filename_npy = os.path.join(root_folder, 'sdf', filename + '.npy')
+                    check_folder([filename_obj, filename_box, filename_npy])
+                    if os.path.exists(filename_obj): continue
 
-                filename_obj = os.path.join(root_folder, 'mesh', filename + '.obj')
-                filename_box = os.path.join(root_folder, 'bbox', filename + '.npz')
-                filename_npy = os.path.join(root_folder, 'sdf', filename + '.npy')
-                check_folder([filename_obj, filename_box, filename_npy])
-                if os.path.exists(filename_obj): continue
+                    filename_raw = os.path.join(mesh_dir,  f'{filename}.stl')
 
-                filename_raw = os.path.join(mesh_dir,  f'{filename}.stl')
+                    # load the raw mesh
+                    mesh = trimesh.load(filename_raw, force='mesh')
 
-                # load the raw mesh
-                mesh = trimesh.load(filename_raw, force='mesh')
+                    # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
+                    vertices = mesh.vertices
+                    bbmin, bbmax = vertices.min(0), vertices.max(0)
+                    center = (bbmin + bbmax) * 0.5
+                    scale = 2.0 * mesh_scale / (bbmax - bbmin).max()
+                    vertices = (vertices - center) * scale
 
-                # rescale mesh to [-1, 1] for mesh2sdf, note the factor **mesh_scale**
-                vertices = mesh.vertices
-                bbmin, bbmax = vertices.min(0), vertices.max(0)
-                center = (bbmin + bbmax) * 0.5
-                scale = 2.0 * mesh_scale / (bbmax - bbmin).max()
-                vertices = (vertices - center) * scale
+                    # run mesh2sdf
+                    sdf, mesh_new = mesh2sdf.compute(vertices, mesh.faces, size, fix=True, level=level, return_mesh=True)
+                    mesh_new.vertices = mesh_new.vertices * shape_scale
 
-                # run mesh2sdf
-                sdf, mesh_new = mesh2sdf.compute(vertices, mesh.faces, size, fix=True, level=level, return_mesh=True)
-                mesh_new.vertices = mesh_new.vertices * shape_scale
+                    # save
+                    np.savez(filename_box, bbmax=bbmax, bbmin=bbmin, mul=mesh_scale)
+                    np.save(filename_npy, sdf)
+                    mesh_new.export(filename_obj)
 
-                # save
-                np.savez(filename_box, bbmax=bbmax, bbmin=bbmin, mul=mesh_scale)
-                np.save(filename_npy, sdf)
-                mesh_new.export(filename_obj)
-
-                print(f'{filename} done.')
+                    print(f'{filename} done.')
+                except:
+                    traceback.print_exc()
+                    raise Exception(f'Error processing {filename} in process {process_id}')
 
     processes = [mp.Process(target=process, args=[pid]) for pid in range(num_processes)]
     for p in processes:
