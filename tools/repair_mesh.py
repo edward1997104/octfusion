@@ -39,9 +39,9 @@ parser.add_argument('--dataset', type=str, default='Thingi10K')
 parser.add_argument('--s3_bucket', type=str, default='build3d-sdfs')
 args = parser.parse_args()
 
-size = args.sdf_size        # resolution of SDF
-# size = 128                 # resolution of SDF
-level = 0.015  / 2         # 2/128 = 0.015625
+# size = args.sdf_size        # resolution of SDF
+size = 128                 # resolution of SDF
+level = 0.015         # 2/128 = 0.015625
 shape_scale = 0.5    # rescale the shape into [-0.5, 0.5]
 project_folder = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 root_folder = os.path.join(project_folder, f'data/{args.dataset}')
