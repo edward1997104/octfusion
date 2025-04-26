@@ -161,7 +161,7 @@ def generate(opt, model):
     total_iters = 100000000
     pbar = tqdm(total=total_iters)
 
-    total_num = category_5_to_num[opt.category]
+    total_num = 2000
 
     for iter_i in range(total_iters):
 
@@ -177,10 +177,7 @@ def generate(opt, model):
         if result_index >= total_num: 
             break
 
-        if opt.category == "im_5":
-            category = random.choice(list(category_5_to_label.keys()))
-        else:
-            category = opt.category
+        category = opt.category
         model.sample(split_small = split_small, category = category, prefix = 'results', ema = True, ddim_steps = 200, clean = False, save_index = result_index)
         pbar.update(1)
 
