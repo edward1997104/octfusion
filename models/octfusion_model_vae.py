@@ -228,8 +228,8 @@ class OctFusionModel(BaseModel):
                 filename = os.path.join(save_dir, f'{filename}.obj')
             else:
                 filename = os.path.join(save_dir, f'{index + i}.obj')
-            if ngen == 1:
-                filename = os.path.join(save_dir, f'{index}.obj')
+            # if ngen == 1:
+            #     filename = os.path.join(save_dir, f'{index}.obj')
             sdf_value = self.sdfs[i].cpu().numpy()
             vtx, faces = np.zeros((0, 3)), np.zeros((0, 3))
             try:
