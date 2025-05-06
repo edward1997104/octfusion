@@ -194,15 +194,15 @@ class OctFusionModel(BaseModel):
         pos = filename.rfind('.')
         if pos != -1: 
             filename = filename[:pos]  # remove the suffix
-        save_dir = os.path.join(self.opt.logs_dir, self.opt.name, save_folder, filename)
+        save_dir = os.path.join(self.opt.logs_dir, self.opt.name, save_folder)
         os.makedirs(save_dir, exist_ok=True)
         bbox = self.batch['bbox'][0].numpy() if 'bbox' in self.batch else None
         self.get_sdfs(output['neural_mpu'], self.batch_size, bbox)  # output['neural_mpu']是一个函数。
-        self.export_mesh(save_dir, index = 0)
+        self.export_mesh(save_dir, index = 0, filename=filename)
 
         # save the input point cloud
-        pointcloud = trimesh.PointCloud(vertices=self.batch['points'][0].cpu().points.numpy())
-        pointcloud.export(os.path.join(save_dir, 'input.ply'))
+        # pointcloud = trimesh.PointCloud(vertices=self.batch['points'][0].cpu().points.numpy())
+        # pointcloud.export(os.path.join(save_dir, 'input.ply'))
 
 
     def get_sdfs(self, neural_mpu, batch_size, bbox):
@@ -215,7 +215,7 @@ class OctFusionModel(BaseModel):
 
         self.sdfs = calc_sdf(neural_mpu, batch_size, size = self.solver.resolution, bbmin = self.bbmin, bbmax = self.bbmax)
 
-    def export_mesh(self, save_dir, index = 0, level = 0, clean = False):
+    def export_mesh(self, save_dir, index = 0, level = 0, clean = False, filename= None):
         try:
             os.makedirs(save_dir, exist_ok=True)
         except FileExistsError:
@@ -224,7 +224,10 @@ class OctFusionModel(BaseModel):
         size = self.solver.resolution
         mesh_scale=self.vq_conf.data.test.point_scale
         for i in range(ngen):
-            filename = os.path.join(save_dir, f'{index + i}.obj')
+            if filename is not None:
+                filename = os.path.join(save_dir, f'{filename}.obj')
+            else:
+                filename = os.path.join(save_dir, f'{index + i}.obj')
             if ngen == 1:
                 filename = os.path.join(save_dir, f'{index}.obj')
             sdf_value = self.sdfs[i].cpu().numpy()
